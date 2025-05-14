@@ -1,0 +1,11 @@
+# See https://yamllint.readthedocs.io/en/stable/configuration.html#extending-the-default-configuration
+# for configuration documentation
+ignore-from-file: .gitignore
+
+extends: default
+
+rules:
+  line-length: disable
+  document-start: disable
+  comments:
+    min-spaces-from-content: 1
