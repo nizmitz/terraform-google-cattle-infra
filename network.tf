@@ -11,9 +11,27 @@ resource "google_compute_network" "this" {
 resource "google_compute_subnetwork" "this" {
   name          = "${var.project_id}-subnet"
   project       = var.project_id
-  ip_cidr_range = var.ip_cidr_range[0]
+  ip_cidr_range = element(var.network_configuration.ip_cidr_range, 0)
   region        = var.region
   network       = google_compute_network.this.self_link
+}
+
+resource "google_service_networking_connection" "this" {
+
+  network                 = google_compute_network.this.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.this.name]
+}
+
+resource "google_compute_global_address" "this" {
+  provider = google-beta
+
+  name          = "${var.project_id}-private-ip"
+  project       = var.project_id
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.this.id
 }
 
 ################################################################################
@@ -46,5 +64,5 @@ resource "google_compute_firewall" "this_all_internal" {
   }
 
   target_tags   = ["internal"]
-  source_ranges = var.ip_cidr_range
+  source_ranges = var.network_configuration.ip_cidr_range
 }

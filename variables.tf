@@ -15,28 +15,28 @@ variable "zone" {
   description = "Zone of the project that is hosted."
 }
 
-variable "ip_cidr_range" {
-  type        = list(string)
-  default     = ["10.0.0.0/16"]
-  description = "ip range that will be used for the vpc"
+variable "network_configuration" {
+  type = object({
+    ip_cidr_range = list(string)
+  })
+  default = {
+    ip_cidr_range = ["10.0.0.0/16"]
+  }
+  description = "common configuration for the VPC"
 }
 
-variable "os_project" {
-  type        = string
-  default     = "debian-cloud"
-  description = "OS public project names for the instances"
-}
-
-variable "os_family" {
-  type        = string
-  default     = "debian-12"
-  description = "OS family for the instances"
-}
-
-variable "ssh_user" {
-  type        = string
-  default     = "terraform"
-  description = "SSH user that will be used for all the instances"
+variable "compute_configuration" {
+  type = object({
+    os_project = string
+    os_family  = string
+    ssh_user   = string
+  })
+  default = {
+    os_family  = "debian-12"
+    os_project = "debian-cloud"
+    ssh_user   = "terraform"
+  }
+  description = "common configuration for all compute instances"
 }
 
 variable "waf_instance" {
@@ -77,4 +77,32 @@ variable "cattle_instance" {
     external_ip  = false
   }
   description = "Specification that will be used for waf instance"
+}
+
+variable "sql_instance" {
+  type = object({
+    name                        = string
+    tier                        = string
+    database_version            = string
+    edition                     = string
+    availability_type           = string
+    disk_size                   = number
+    disk_type                   = string
+    deletion_protection_enabled = bool
+    private_network             = bool
+    query_insights_enabled      = bool
+  })
+  default = {
+    name                        = "default"
+    tier                        = "db-f1-micro"
+    database_version            = "POSTGRES_17"
+    edition                     = "ENTERPRISE"
+    availability_type           = "ZONAL"
+    disk_size                   = 10
+    disk_type                   = "PD_HDD"
+    deletion_protection_enabled = true
+    private_network             = false
+    query_insights_enabled      = true
+  }
+  description = "Specification that will be used for sql_instance"
 }

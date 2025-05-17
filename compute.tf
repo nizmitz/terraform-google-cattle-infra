@@ -9,8 +9,8 @@ resource "google_compute_address" "this_waf" {
 }
 
 data "google_compute_image" "this_waf" {
-  family  = var.os_family
-  project = var.os_project
+  family  = var.compute_configuration.os_family
+  project = var.compute_configuration.os_project
 }
 
 resource "tls_private_key" "this_waf" {
@@ -34,7 +34,7 @@ resource "google_compute_instance" "this_waf" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_user}:${tls_private_key.this_waf.public_key_openssh}"
+    ssh-keys = "${var.compute_configuration.ssh_user}:${tls_private_key.this_waf.public_key_openssh}"
   }
 
   network_interface {
@@ -59,8 +59,8 @@ resource "google_compute_address" "this_cattle" {
 }
 
 data "google_compute_image" "this_cattle" {
-  family  = var.os_family
-  project = var.os_project
+  family  = var.compute_configuration.os_family
+  project = var.compute_configuration.os_project
 }
 
 resource "tls_private_key" "this_cattle" {
@@ -85,7 +85,7 @@ resource "google_compute_instance" "this_cattle" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_user}:${tls_private_key.this_cattle.public_key_openssh}"
+    ssh-keys = "${var.compute_configuration.ssh_user}:${tls_private_key.this_cattle.public_key_openssh}"
   }
 
   network_interface {
