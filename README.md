@@ -17,6 +17,7 @@
 | ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | 6.8.0 |
 | <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 6.35.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | 3.9.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | 4.3.0 |
 
 ## Modules
@@ -36,6 +37,8 @@ No modules.
 | [google_compute_router_nat.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_router_nat) | resource |
 | [google_compute_subnetwork.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_subnetwork) | resource |
 | [google_service_networking_connection.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_networking_connection) | resource |
+| [google_sql_database_instance.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/sql_database_instance) | resource |
+| [random_password.this](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
 | [tls_private_key.this](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
 | [google_compute_image.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/compute_image) | data source |
 
@@ -48,6 +51,7 @@ No modules.
 | <a name="input_network_configuration"></a> [network\_configuration](#input\_network\_configuration) | common configuration for the VPC | <pre>object({<br/>    ip_cidr_range = list(string)<br/>  })</pre> | <pre>{<br/>  "ip_cidr_range": [<br/>    "172.10.0.0/16"<br/>  ]<br/>}</pre> | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Project id of the project that holds the network. | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | Region of the project that is hosted. | `string` | `"asia-southeast1"` | no |
+| <a name="input_sql_instances"></a> [sql\_instances](#input\_sql\_instances) | Specification that will be used for sql\_instances | <pre>list(object({<br/>    name                        = string<br/>    tier                        = string<br/>    database_version            = string<br/>    edition                     = string<br/>    availability_type           = string<br/>    disk_size                   = number<br/>    disk_type                   = string<br/>    deletion_protection_enabled = bool<br/>    private_network             = bool<br/>    query_insights_enabled      = bool<br/>  }))</pre> | `[]` | no |
 | <a name="input_vm_instances"></a> [vm\_instances](#input\_vm\_instances) | Specification that will be used for vm instances | <pre>list(object({<br/>    name         = string<br/>    machine_type = string<br/>    description  = optional(string)<br/>    network_tags = optional(list(string))<br/>    disk_size    = optional(number)<br/>    nat_ip       = optional(bool, false)<br/>  }))</pre> | `[]` | no |
 | <a name="input_zone"></a> [zone](#input\_zone) | Zone of the project that is hosted. | `string` | `"a"` | no |
 

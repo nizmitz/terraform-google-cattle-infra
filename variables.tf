@@ -65,19 +65,19 @@ variable "firewall_rules" {
   description = "Specification that will be used for firewall rules"
 }
 
-# variable "sql_instance" {
-#   type = object({
-#     name                        = string
-#     tier                        = string
-#     database_version            = string
-#     edition                     = string
-#     availability_type           = string
-#     disk_size                   = number
-#     disk_type                   = string
-#     deletion_protection_enabled = bool
-#     private_network             = bool
-#     query_insights_enabled      = bool
-#   })
-#   default     = null
-#   description = "Specification that will be used for sql_instance"
-# }
+variable "sql_instances" {
+  type = list(object({
+    name                        = string
+    tier                        = string
+    database_version            = string
+    edition                     = string
+    availability_type           = string
+    disk_size                   = number
+    disk_type                   = string
+    deletion_protection_enabled = bool
+    private_network             = bool
+    query_insights_enabled      = bool
+  }))
+  default     = []
+  description = "Specification that will be used for sql_instances"
+}
