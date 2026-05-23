@@ -20,7 +20,7 @@ variable "network_configuration" {
     ip_cidr_range = list(string)
   })
   default = {
-    ip_cidr_range = ["10.0.0.0/16"]
+    ip_cidr_range = ["172.10.0.0/16"]
   }
   description = "common configuration for the VPC"
 }
@@ -39,70 +39,45 @@ variable "compute_configuration" {
   description = "common configuration for all compute instances"
 }
 
-variable "waf_instance" {
-  type = object({
+
+variable "vm_instances" {
+  type = list(object({
     name         = string
     machine_type = string
-    description  = string
-    network_tags = list(string)
-    disk_size    = number
-  })
-
-  default = {
-    name         = "default"
-    machine_type = "e2-micro"
-    description  = "default machine"
-    network_tags = ["default"]
-    disk_size    = 10
-  }
-  description = "Specification that will be used for waf instance"
+    description  = optional(string)
+    network_tags = optional(list(string))
+    disk_size    = optional(number)
+    nat_ip       = optional(bool, false)
+  }))
+  default     = []
+  description = "Specification that will be used for vm instances"
 }
 
-variable "cattle_instance" {
-  type = object({
-    name         = string
-    machine_type = string
-    description  = string
-    network_tags = list(string)
-    disk_size    = number
-    external_ip  = bool
-  })
-
-  default = {
-    name         = "default"
-    machine_type = "e2-micro"
-    description  = "default machine"
-    network_tags = ["default"]
-    disk_size    = 10
-    external_ip  = false
-  }
-  description = "Specification that will be used for waf instance"
+variable "firewall_rules" {
+  type = list(object({
+    name          = string
+    description   = optional(string)
+    source_ranges = list(string)
+    target_tags   = list(string)
+    allow         = list(string)
+  }))
+  default     = []
+  description = "Specification that will be used for firewall rules"
 }
 
-variable "sql_instance" {
-  type = object({
-    name                        = string
-    tier                        = string
-    database_version            = string
-    edition                     = string
-    availability_type           = string
-    disk_size                   = number
-    disk_type                   = string
-    deletion_protection_enabled = bool
-    private_network             = bool
-    query_insights_enabled      = bool
-  })
-  default = {
-    name                        = "default"
-    tier                        = "db-f1-micro"
-    database_version            = "POSTGRES_17"
-    edition                     = "ENTERPRISE"
-    availability_type           = "ZONAL"
-    disk_size                   = 10
-    disk_type                   = "PD_HDD"
-    deletion_protection_enabled = true
-    private_network             = false
-    query_insights_enabled      = true
-  }
-  description = "Specification that will be used for sql_instance"
-}
+# variable "sql_instance" {
+#   type = object({
+#     name                        = string
+#     tier                        = string
+#     database_version            = string
+#     edition                     = string
+#     availability_type           = string
+#     disk_size                   = number
+#     disk_type                   = string
+#     deletion_protection_enabled = bool
+#     private_network             = bool
+#     query_insights_enabled      = bool
+#   })
+#   default     = null
+#   description = "Specification that will be used for sql_instance"
+# }

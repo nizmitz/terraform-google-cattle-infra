@@ -34,35 +34,39 @@ resource "google_compute_global_address" "this" {
   network       = google_compute_network.this.id
 }
 
+resource "google_compute_router" "this" {
+  name    = "${var.project_id}-router"
+  project = var.project_id
+  network = google_compute_network.this.id
+}
+
+resource "google_compute_router_nat" "this" {
+  name                               = "${var.project_id}-nat"
+  project                            = var.project_id
+  router                             = google_compute_router.this.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  auto_network_tier                  = "STANDARD"
+  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+  subnetwork {
+    name                    = google_compute_subnetwork.this.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+}
+
 ################################################################################
 #                                Firewall Segment                              #
 ################################################################################
 
-resource "google_compute_firewall" "this_ssh_external" {
-  name    = "allow-ssh"
-  project = var.project_id
-  network = google_compute_network.this.self_link
-  allow {
-    protocol = "icmp"
-  }
-
+resource "google_compute_firewall" "this" {
+  for_each = { for rule in var.firewall_rules : rule.name => rule }
+  name     = each.value.name
+  project  = var.project_id
+  network  = google_compute_network.this.self_link
   allow {
     protocol = "tcp"
-    ports    = ["22"]
+    ports    = each.value.allow
   }
-
-  target_tags   = ["waf"]
-  source_ranges = ["0.0.0.0/0"]
-}
-
-resource "google_compute_firewall" "this_all_internal" {
-  name    = "allow-internal"
-  project = var.project_id
-  network = google_compute_network.this.self_link
-  allow {
-    protocol = "all"
-  }
-
-  target_tags   = ["internal"]
-  source_ranges = var.network_configuration.ip_cidr_range
+  target_tags   = each.value.target_tags
+  source_ranges = each.value.source_ranges
 }
