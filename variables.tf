@@ -77,7 +77,27 @@ variable "sql_instances" {
     deletion_protection_enabled = bool
     private_network             = bool
     query_insights_enabled      = bool
+    ssl_mode                    = string
+    database_flags = list(object({
+      name  = string
+      value = string
+    }))
   }))
   default     = []
   description = "Specification that will be used for sql_instances"
+}
+
+variable "dns_private_zone" {
+  type = list(object({
+    name   = string
+    domain = string
+    recordsets = list(object({
+      name    = string
+      type    = string
+      ttl     = number
+      records = list(string)
+    }))
+  }))
+  default     = []
+  description = "Specification that will be used for dns_private_zone"
 }

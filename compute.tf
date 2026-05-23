@@ -1,8 +1,20 @@
 locals {
   nat_ips = [for instance in var.vm_instances : instance.name if instance.nat_ip]
+  kubernetes_roles = [
+    "roles/compute.instanceAdmin",
+    "roles/compute.networkAdmin",
+    "roles/compute.securityAdmin",
+    "roles/compute.storageAdmin",
+    "roles/compute.viewer",
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/secretmanager.secretAccessor",
+    "roles/cloudsql.client",
+    "roles/artifactregistry.reader",
+  ]
 }
 ################################################################################
-#                                    Cattle Segment                            #
+#                                    Nodes Segment                            #
 ################################################################################
 resource "google_compute_address" "this" {
   for_each     = { for instance in local.nat_ips : instance => instance }
@@ -10,6 +22,19 @@ resource "google_compute_address" "this" {
   project      = var.project_id
   region       = var.region
   address_type = "EXTERNAL"
+}
+
+resource "google_service_account" "this" {
+  project      = var.project_id
+  account_id   = "nodes-kubernetes-sa"
+  display_name = "Nodes Kubernetes Service Account"
+}
+
+resource "google_project_iam_member" "this" {
+  for_each = { for role in local.kubernetes_roles : role => role }
+  project  = var.project_id
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.this.email}"
 }
 
 data "google_compute_image" "this" {
@@ -53,4 +78,27 @@ resource "google_compute_instance" "this" {
     }
   }
   allow_stopping_for_update = true
+  service_account {
+    email  = google_service_account.this.email
+    scopes = ["cloud-platform"]
+  }
+}
+
+################################################################################
+#                                    Gar Segment                              #
+################################################################################
+
+
+
+
+resource "google_artifact_registry_repository" "this" {
+  repository_id = "${var.project_id}-repository"
+  project       = var.project_id
+  location      = var.region
+  format        = "DOCKER"
+  description   = "Docker repository for the project"
+  docker_config {
+    immutable_tags = true
+  }
+
 }
