@@ -1,18 +1,3 @@
-locals {
-  nat_ips = [for instance in var.vm_instances : instance.name if instance.nat_ip]
-  kubernetes_roles = [
-    "roles/compute.instanceAdmin",
-    "roles/compute.networkAdmin",
-    "roles/compute.securityAdmin",
-    "roles/compute.storageAdmin",
-    "roles/compute.viewer",
-    "roles/logging.logWriter",
-    "roles/monitoring.metricWriter",
-    "roles/secretmanager.secretAccessor",
-    "roles/cloudsql.client",
-    "roles/artifactregistry.reader",
-  ]
-}
 ################################################################################
 #                                    Nodes Segment                            #
 ################################################################################
@@ -46,6 +31,24 @@ resource "tls_private_key" "this" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
+resource "google_kms_key_ring" "this" {
+  for_each = { for instance in var.vm_instances : instance.name => instance if instance.enable_disk_encryption }
+  name     = "${each.value.name}-key-ring"
+  location = var.region
+  project  = var.project_id
+}
+
+resource "google_kms_crypto_key" "this" {
+  for_each        = { for instance in var.vm_instances : instance.name => instance if instance.enable_disk_encryption }
+  name            = "${each.value.name}-key"
+  key_ring        = google_kms_key_ring.this[each.value.name].id
+  rotation_period = "7776000s"
+  purpose         = "ENCRYPT_DECRYPT"
+  version_template {
+    algorithm        = "GOOGLE_SYMMETRIC_ENCRYPTION"
+    protection_level = "SOFTWARE"
+  }
+}
 
 resource "google_compute_instance" "this" {
   for_each = { for instance in var.vm_instances : instance.name => instance }
@@ -61,6 +64,8 @@ resource "google_compute_instance" "this" {
       image = data.google_compute_image.this.self_link
       size  = each.value.disk_size
     }
+    kms_key_self_link               = each.value.enable_disk_encryption ? google_kms_crypto_key.this[each.value.name].id : null
+    disk_encryption_service_account = each.value.enable_disk_encryption ? google_service_account.this.email : null
   }
 
   metadata = {
@@ -82,14 +87,16 @@ resource "google_compute_instance" "this" {
     email  = google_service_account.this.email
     scopes = ["cloud-platform"]
   }
+  shielded_instance_config {
+    enable_secure_boot          = each.value.enable_secure_boot
+    enable_vtpm                 = each.value.enable_vtpm
+    enable_integrity_monitoring = each.value.enable_integrity_monitoring
+  }
 }
 
 ################################################################################
 #                                    Gar Segment                              #
 ################################################################################
-
-
-
 
 resource "google_artifact_registry_repository" "this" {
   repository_id = "${var.project_id}-repository"

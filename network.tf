@@ -40,13 +40,26 @@ resource "google_compute_router" "this" {
   network = google_compute_network.this.id
 }
 
+resource "google_compute_address" "this_nat" {
+  name         = "${var.project_id}-nat-ip"
+  project      = var.project_id
+  region       = var.region
+  address_type = "EXTERNAL"
+  network_tier = var.nat_configuration.network_tier
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "google_compute_router_nat" "this" {
   name                               = "${var.project_id}-nat"
   project                            = var.project_id
   router                             = google_compute_router.this.name
   region                             = var.region
-  nat_ip_allocate_option             = "AUTO_ONLY"
-  auto_network_tier                  = "STANDARD"
+  nat_ip_allocate_option             = var.nat_configuration.enable_dynamic_port_allocation ? "AUTO_ONLY" : "MANUAL_ONLY"
+  initial_nat_ips                    = var.nat_configuration.enable_dynamic_port_allocation ? [] : [google_compute_address.this_nat.self_link]
+  auto_network_tier                  = var.nat_configuration.network_tier
+  enable_dynamic_port_allocation     = var.nat_configuration.enable_dynamic_port_allocation
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
   subnetwork {
     name                    = google_compute_subnetwork.this.id
@@ -69,4 +82,22 @@ resource "google_compute_firewall" "this" {
   }
   target_tags   = each.value.target_tags
   source_ranges = each.value.source_ranges
+}
+
+
+
+module "dns-private-zone" {
+  for_each   = local.dns_private_zone_properties
+  source     = "terraform-google-modules/cloud-dns/google"
+  version    = "~> 7.0"
+  project_id = var.project_id
+  type       = "private"
+  name       = each.value.name
+  domain     = each.value.domain
+
+  private_visibility_config_networks = [
+    google_compute_network.this.self_link
+  ]
+
+  recordsets = each.value.recordsets
 }

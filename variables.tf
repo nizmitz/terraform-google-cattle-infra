@@ -42,12 +42,16 @@ variable "compute_configuration" {
 
 variable "vm_instances" {
   type = list(object({
-    name         = string
-    machine_type = string
-    description  = optional(string)
-    network_tags = optional(list(string))
-    disk_size    = optional(number)
-    nat_ip       = optional(bool, false)
+    name                        = string
+    machine_type                = string
+    description                 = optional(string)
+    network_tags                = optional(list(string))
+    disk_size                   = optional(number)
+    nat_ip                      = optional(bool, false)
+    enable_secure_boot          = optional(bool, false)
+    enable_vtpm                 = optional(bool, false)
+    enable_integrity_monitoring = optional(bool, false)
+    enable_disk_encryption      = optional(bool, false)
   }))
   default     = []
   description = "Specification that will be used for vm instances"
@@ -100,4 +104,13 @@ variable "dns_private_zone" {
   }))
   default     = []
   description = "Specification that will be used for dns_private_zone"
+}
+
+variable "nat_configuration" {
+  type = object({
+    network_tier                   = optional(string, "PREMIUM")
+    enable_dynamic_port_allocation = optional(bool, false)
+  })
+  default     = {}
+  description = "Specification that will be used for nat_configuration"
 }
