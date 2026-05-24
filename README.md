@@ -71,6 +71,7 @@
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_nat_properties"></a> [nat\_properties](#output\_nat\_properties) | n/a |
 | <a name="output_sql_properties"></a> [sql\_properties](#output\_sql\_properties) | n/a |
 | <a name="output_vm_properties"></a> [vm\_properties](#output\_vm\_properties) | n/a |
 <!-- END_TF_DOCS -->

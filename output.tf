@@ -11,3 +11,9 @@ output "vm_properties" {
     crypto_key = google_kms_crypto_key.this[instance.name].name
   } }
 }
+
+output "nat_properties" {
+  value = {
+    nat_ip = google_compute_address.this_nat.address
+  }
+}
