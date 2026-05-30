@@ -12,8 +12,15 @@ output "vm_properties" {
   } }
 }
 
-output "nat_properties" {
+output "public_ips" {
   value = {
     nat_ip = google_compute_address.this_nat.address
+  }
+}
+
+output "dns_private_zone_recordset_keys" {
+  value = {
+    for zone_name, zone in local.dns_private_zone_properties :
+    zone_name => [for record in zone.recordsets : join("/", [record.name, record.type])]
   }
 }

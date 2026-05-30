@@ -21,6 +21,7 @@ resource "google_service_networking_connection" "this" {
   network                 = google_compute_network.this.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.this.name]
+  deletion_policy         = "DELETE"
 }
 
 resource "google_compute_global_address" "this" {
@@ -56,8 +57,8 @@ resource "google_compute_router_nat" "this" {
   project                            = var.project_id
   router                             = google_compute_router.this.name
   region                             = var.region
-  nat_ip_allocate_option             = var.nat_configuration.enable_dynamic_port_allocation ? "AUTO_ONLY" : "MANUAL_ONLY"
-  initial_nat_ips                    = var.nat_configuration.enable_dynamic_port_allocation ? [] : [google_compute_address.this_nat.self_link]
+  nat_ip_allocate_option             = var.nat_configuration.enable_dynamic_port_allocation ? "MANUAL_ONLY" : "AUTO_ONLY"
+  initial_nat_ips                    = var.nat_configuration.enable_dynamic_port_allocation ? [google_compute_address.this_nat.self_link] : []
   auto_network_tier                  = var.nat_configuration.network_tier
   enable_dynamic_port_allocation     = var.nat_configuration.enable_dynamic_port_allocation
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
@@ -77,14 +78,12 @@ resource "google_compute_firewall" "this" {
   project  = var.project_id
   network  = google_compute_network.this.self_link
   allow {
-    protocol = "tcp"
+    protocol = each.value.protocol
     ports    = each.value.allow
   }
   target_tags   = each.value.target_tags
   source_ranges = each.value.source_ranges
 }
-
-
 
 module "dns-private-zone" {
   for_each   = local.dns_private_zone_properties

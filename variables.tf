@@ -25,20 +25,18 @@ variable "network_configuration" {
   description = "common configuration for the VPC"
 }
 
-variable "compute_configuration" {
-  type = object({
-    os_project = string
-    os_family  = string
-    ssh_user   = string
-  })
-  default = {
-    os_family  = "debian-12"
-    os_project = "debian-cloud"
-    ssh_user   = "terraform"
-  }
-  description = "common configuration for all compute instances"
+variable "artifact_registry_configuration" {
+  type = list(object({
+    name        = string
+    description = string
+    format      = optional(string, "DOCKER")
+    docker_config = optional(list(object({
+      immutable_tags = bool
+    })), [])
+  }))
+  default     = []
+  description = "Specification that will be used for artifact registry"
 }
-
 
 variable "vm_instances" {
   type = list(object({
@@ -52,6 +50,15 @@ variable "vm_instances" {
     enable_vtpm                 = optional(bool, false)
     enable_integrity_monitoring = optional(bool, false)
     enable_disk_encryption      = optional(bool, false)
+    os_project                  = optional(string, "debian-cloud")
+    os_family                   = optional(string, "debian-12")
+    ssh_user                    = optional(string, "terraform")
+    spot_instance               = optional(bool, false)
+    disk_type                   = optional(string, "pd-standard")
+    labels = optional(list(object({
+      key   = string
+      value = string
+    })), [])
   }))
   default     = []
   description = "Specification that will be used for vm instances"
@@ -63,7 +70,8 @@ variable "firewall_rules" {
     description   = optional(string)
     source_ranges = list(string)
     target_tags   = list(string)
-    allow         = list(string)
+    allow         = optional(list(string), null)
+    protocol      = optional(string, "tcp")
   }))
   default     = []
   description = "Specification that will be used for firewall rules"

@@ -23,14 +23,16 @@ resource "google_project_iam_member" "this" {
 }
 
 data "google_compute_image" "this" {
-  family  = var.compute_configuration.os_family
-  project = var.compute_configuration.os_project
+  for_each = { for instance in var.vm_instances : instance.name => instance }
+  family   = each.value.os_family
+  project  = each.value.os_project
 }
 
 resource "tls_private_key" "this" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
+
 resource "google_kms_key_ring" "this" {
   for_each = { for instance in var.vm_instances : instance.name => instance if instance.enable_disk_encryption }
   name     = "${each.value.name}-key-ring"
@@ -59,19 +61,27 @@ resource "google_compute_instance" "this" {
   machine_type = each.value.machine_type
   description  = each.value.description
   tags         = each.value.network_tags
+  labels       = { for label in each.value.labels : label.key => label.value }
   boot_disk {
     initialize_params {
-      image = data.google_compute_image.this.self_link
+      image = data.google_compute_image.this[each.value.name].self_link
       size  = each.value.disk_size
+      type  = each.value.disk_type
     }
     kms_key_self_link               = each.value.enable_disk_encryption ? google_kms_crypto_key.this[each.value.name].id : null
     disk_encryption_service_account = each.value.enable_disk_encryption ? google_service_account.this.email : null
   }
 
   metadata = {
-    ssh-keys = "${var.compute_configuration.ssh_user}:${tls_private_key.this.public_key_openssh}"
+    ssh-keys = "${each.value.ssh_user}:${tls_private_key.this.public_key_openssh}"
   }
 
+  scheduling {
+    preemptible                 = each.value.spot_instance ? true : false
+    automatic_restart           = !each.value.spot_instance ? true : false
+    provisioning_model          = each.value.spot_instance ? "SPOT" : "STANDARD"
+    instance_termination_action = each.value.spot_instance ? "STOP" : "DELETE"
+  }
   network_interface {
     network    = google_compute_network.this.self_link
     subnetwork = google_compute_subnetwork.this.self_link
@@ -99,13 +109,13 @@ resource "google_compute_instance" "this" {
 ################################################################################
 
 resource "google_artifact_registry_repository" "this" {
-  repository_id = "${var.project_id}-repository"
+  for_each      = { for repository in var.artifact_registry_configuration : repository.name => repository }
+  repository_id = each.value.name
   project       = var.project_id
   location      = var.region
-  format        = "DOCKER"
-  description   = "Docker repository for the project"
+  format        = each.value.format
+  description   = each.value.description
   docker_config {
-    immutable_tags = true
+    immutable_tags = each.value.docker_config[0].immutable_tags
   }
-
 }
