@@ -33,6 +33,9 @@ variable "artifact_registry_configuration" {
     docker_config = optional(list(object({
       immutable_tags = bool
     })), [])
+    vulnerability_scanning_config = optional(object({
+      enablement_config = optional(string, "INHERITED")
+    }), null)
   }))
   default     = []
   description = "Specification that will be used for artifact registry"
@@ -55,6 +58,7 @@ variable "vm_instances" {
     ssh_user                    = optional(string, "terraform")
     spot_instance               = optional(bool, false)
     disk_type                   = optional(string, "pd-standard")
+    enable_oslogin              = optional(bool, false)
     labels = optional(list(object({
       key   = string
       value = string

@@ -2,6 +2,17 @@ variables {
   project_id = "mock-project"
   region     = "asia-southeast1"
   zone       = "a"
+  test_artifact_registry = [{
+    name        = "mock-project-repository"
+    description = "Mock docker repository"
+    format      = "DOCKER"
+    docker_config = [{
+      immutable_tags = true
+    }]
+    vulnerability_scanning_config = {
+      enablement_config = "INHERITED"
+    }
+  }]
 }
 
 run "compute_creates_service_account_and_iam" {
@@ -34,7 +45,7 @@ run "compute_creates_service_account_and_iam" {
   }
 }
 
-run "compute_creates_artifact_registry" {
+run "compute_skips_artifact_registry_by_default" {
   command = plan
 
   variables {
@@ -43,19 +54,87 @@ run "compute_creates_artifact_registry" {
     dns_private_zone = []
     sql_instances    = []
   }
+
   assert {
-    condition     = google_artifact_registry_repository.this.repository_id == "mock-project-repository"
-    error_message = "Artifact Registry repository_id must be derived from project_id."
+    condition     = length(google_artifact_registry_repository.this) == 0
+    error_message = "No Artifact Registry repositories must be created when configuration is empty."
+  }
+}
+
+run "compute_creates_artifact_registry" {
+  command = plan
+
+  variables {
+    artifact_registry_configuration = var.test_artifact_registry
+    vm_instances                    = []
+    firewall_rules                  = []
+    dns_private_zone                = []
+    sql_instances                   = []
   }
 
   assert {
-    condition     = google_artifact_registry_repository.this.format == "DOCKER"
+    condition     = length(google_artifact_registry_repository.this) == 1
+    error_message = "One Artifact Registry repository must be created per configuration entry."
+  }
+
+  assert {
+    condition     = google_artifact_registry_repository.this["mock-project-repository"].repository_id == "mock-project-repository"
+    error_message = "Artifact Registry repository_id must match the configured name."
+  }
+
+  assert {
+    condition     = google_artifact_registry_repository.this["mock-project-repository"].format == "DOCKER"
     error_message = "Artifact Registry repository must use the DOCKER format."
   }
 
   assert {
-    condition     = google_artifact_registry_repository.this.docker_config[0].immutable_tags == true
+    condition     = google_artifact_registry_repository.this["mock-project-repository"].docker_config[0].immutable_tags == true
     error_message = "Artifact Registry repository must enforce immutable tags."
+  }
+
+  assert {
+    condition     = google_artifact_registry_repository.this["mock-project-repository"].vulnerability_scanning_config[0].enablement_config == "INHERITED"
+    error_message = "Artifact Registry vulnerability scanning must follow configuration."
+  }
+}
+
+run "compute_creates_multiple_artifact_registries" {
+  command = plan
+
+  variables {
+    artifact_registry_configuration = [
+      var.test_artifact_registry[0],
+      {
+        name        = "second-repository"
+        description = "Second mock repository"
+        format      = "DOCKER"
+        docker_config = [{
+          immutable_tags = false
+        }]
+        vulnerability_scanning_config = {
+          enablement_config = "DISABLED"
+        }
+      },
+    ]
+    vm_instances     = []
+    firewall_rules   = []
+    dns_private_zone = []
+    sql_instances    = []
+  }
+
+  assert {
+    condition     = length(google_artifact_registry_repository.this) == 2
+    error_message = "One Artifact Registry repository must be created per configuration entry."
+  }
+
+  assert {
+    condition     = contains(keys(google_artifact_registry_repository.this), "mock-project-repository")
+    error_message = "Artifact Registry repositories must be keyed by configured name."
+  }
+
+  assert {
+    condition     = contains(keys(google_artifact_registry_repository.this), "second-repository")
+    error_message = "Artifact Registry repositories must be keyed by configured name."
   }
 }
 

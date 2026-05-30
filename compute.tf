@@ -73,7 +73,8 @@ resource "google_compute_instance" "this" {
   }
 
   metadata = {
-    ssh-keys = "${each.value.ssh_user}:${tls_private_key.this.public_key_openssh}"
+    enable-oslogin = each.value.enable_oslogin ? "TRUE" : "FALSE"
+    ssh-keys       = "${each.value.ssh_user}:${tls_private_key.this.public_key_openssh}"
   }
 
   scheduling {
@@ -117,5 +118,8 @@ resource "google_artifact_registry_repository" "this" {
   description   = each.value.description
   docker_config {
     immutable_tags = each.value.docker_config[0].immutable_tags
+  }
+  vulnerability_scanning_config {
+    enablement_config = each.value.vulnerability_scanning_config.enablement_config
   }
 }
